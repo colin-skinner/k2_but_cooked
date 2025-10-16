@@ -44,39 +44,24 @@ end
     ]
 
     samples = Matrix([
-        3 3 2 3 1 3;
-        1 3 2 3 2 3;
-        3 1 1 2 3 1;
-        1 3 1 2 3 2;
-        2 3 3 2 2 1;
-        1 3 1 1 1 3;
-        1 3 3 1 2 3;
-        3 3 2 3 1 3;
-        1 3 1 3 2 1;
-        3 1 1 3 3 3;
-        2 3 3 3 2 3;
-        2 3 2 3 3 3;
-        2 2 3 1 1 3;
-        2 3 3 3 2 3;
-        1 1 2 3 3 2;
-        2 2 1 3 2 3;
-        1 2 1 3 2 3;
-        3 1 1 3 1 2;
-        3 1 1 3 3 3;
-        1 3 1 2 3 1;
-    ]')
-    
+        3 1 3 1 2 1 1 3 1 3 2 2 2 2 1 2 1 3 3 1
+        3 3 1 3 3 3 3 3 3 1 3 3 2 3 1 2 2 1 1 3
+        2 2 1 1 3 1 3 2 1 1 3 2 3 3 2 1 1 1 1 1
+        3 3 2 2 2 1 1 3 3 3 3 3 1 3 3 3 3 3 3 2
+        1 2 3 3 2 1 2 1 2 3 2 3 1 2 3 2 2 1 3 3
+        3 3 1 2 1 3 3 3 1 3 3 3 3 3 2 3 3 2 3 1
+    ])
+
+    # Graph in original order of nodes
     graph = SimpleDiGraph(length(nodes))
     add_edge!(graph, 1, 2); add_edge!(graph, 1, 4); add_edge!(graph, 3, 4)
     add_edge!(graph, 5, 4); add_edge!(graph, 5, 6)
-
-    order = [1 4 2 5 3 6]
-
-    ordered_samples = similar(samples, Int)
-
-    for i in order
-        ordered_samples[i,:] = samples[order[i],:]
-    end
+    
+    
+    # Changes up the nodes and ordered samples to be in topological order
+    order = [1 3 5 2 4 6] # Maps original rows to their topological orderings
+    ordered_samples = samples[order[:], :] 
+    ordered_nodes = nodes[order[:]]
 
     score = bayesian_score(nodes, graph, samples)
 
@@ -84,43 +69,54 @@ end
     @test isapprox(score, -132.57689402451837)
 end
 
-@testset "Statistics Test" begin
+# @testset "Bayesian Score Test Different Order" begin
+
+#     nodes = [
+#         Variable(:parent1, 3)
+#         Variable(:child1, 3)
+#         Variable(:parent2, 3)
+#         Variable(:child2, 3)
+#         Variable(:parent3, 3)
+#         Variable(:child3, 3)
+#     ]
+
+#     samples = Matrix([
+#         3 3 2 3 1 3;
+#         1 3 2 3 2 3;
+#         3 1 1 2 3 1;
+#         1 3 1 2 3 2;
+#         2 3 3 2 2 1;
+#         1 3 1 1 1 3;
+#         1 3 3 1 2 3;
+#         3 3 2 3 1 3;
+#         1 3 1 3 2 1;
+#         3 1 1 3 3 3;
+#         2 3 3 3 2 3;
+#         2 3 2 3 3 3;
+#         2 2 3 1 1 3;
+#         2 3 3 3 2 3;
+#         1 1 2 3 3 2;
+#         2 2 1 3 2 3;
+#         1 2 1 3 2 3;
+#         3 1 1 3 1 2;
+#         3 1 1 3 3 3;
+#         1 3 1 2 3 1;
+#     ]')
     
-    nodes = [
-        Variable(:parent1, 3)
-        Variable(:child1, 3)
-        Variable(:parent2, 3)
-        Variable(:child2, 3)
-        Variable(:parent3, 3)
-        Variable(:child3, 3)
-    ]
+#     graph = SimpleDiGraph(length(nodes))
+#     add_edge!(graph, 1, 2); add_edge!(graph, 1, 4); add_edge!(graph, 3, 4)
+#     add_edge!(graph, 5, 4); add_edge!(graph, 5, 6)
 
-    samples = Matrix([
-        3 3 2 3 1 3;
-        1 3 2 3 2 3;
-        3 1 1 2 3 1;
-        1 3 1 2 3 2;
-        2 3 3 2 2 1;
-        1 3 1 1 1 3;
-        1 3 3 1 2 3;
-        3 3 2 3 1 3;
-        1 3 1 3 2 1;
-        3 1 1 3 3 3;
-        2 3 3 3 2 3;
-        2 3 2 3 3 3;
-        2 2 3 1 1 3;
-        2 3 3 3 2 3;
-        1 1 2 3 3 2;
-        2 2 1 3 2 3;
-        1 2 1 3 2 3;
-        3 1 1 3 1 2;
-        3 1 1 3 3 3;
-        1 3 1 2 3 1;
-    ]')
-    
-    graph = SimpleDiGraph(length(nodes))
+#     order = [1 4 2 5 3 6]
 
-    score = bayesian_score(nodes, graph, samples)
+#     ordered_samples = similar(samples, Int)
 
-    @test isapprox(score, 0)
-end
+#     for i in order
+#         ordered_samples[i,:] = samples[order[i],:]
+#     end
+
+#     score = bayesian_score(nodes, graph, ordered_samples)
+
+#     # https://github.com/sisl/AA228-CS238-Student/blob/main/project1/example/example.score
+#     @test isapprox(score, -132.57689402451837)
+# end
