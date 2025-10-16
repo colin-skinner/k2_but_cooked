@@ -161,39 +161,30 @@ end
 
 function compute(nodes::Vector{Variable}, samples::Matrix{Int}, starting_graph::DiGraph, restarts = 100)
 
-    if nv(starting_graph) == 0
-        starting_graph = DiGraph(length(nodes))
-    end
-
-    best_ordering = nothing
+    best_score = -Inf
     best_graph = nothing
-    best_nodes = nothing
-    best_samples = nothing
-
-    score = -Inf
+    best_ordering = nothing
 
     for _ in 1:restarts
-        k2_ordering = K2_Ordering(shuffle(1:length(nodes)))
-        new_samples = samples[k2_ordering.ordering, :] # Shuffles rows
-        new_nodes = nodes[k2_ordering.ordering] # Shuffles rows
+        k2_ordering::Vector{Int} = shuffle(1:length(nodes))
 
-        starting_graph = fit(k2_ordering, new_nodes, new_samples, 20)
-        new_score = bayesian_score(new_nodes, starting_graph, new_samples)
+        graph = k2_algorithm(k2_ordering, nodes, samples)
+        score = bayesian_score(nodes, starting_graph, samples)
 
-        if new_score > score
-            score = new_score
+        if score > best_score
+            best_score = score
+            best_graph = graph
             best_ordering = k2_ordering
-            best_graph = starting_graph
-            best_nodes = new_nodes
-            best_samples = new_samples
         end
     end
 
+    # k2_ordering::Vector{Int} = shuffle(1:length(nodes))
+        
+    # graph = k2_algorithm(k2_ordering, nodes, samples, 20)
     method = LocalDirectedGraphSearch(best_graph, 500)
-    graph = local_random_search(method, best_nodes, best_samples)
-    score = bayesian_score(best_nodes, graph, best_samples)
-    return graph, score, best_ordering, best_nodes, best_samples
-
+    graph = local_random_search(method, nodes, samples)
+    score = bayesian_score(nodes, graph, samples)
+    return graph, score, k2_ordering
 end
 
 #######################################################
@@ -238,17 +229,18 @@ function local_random_search(method::LocalDirectedGraphSearch, nodes::Vector{Var
 end
 
 
-function fit(method::K2_Ordering, vars, D, iterations = 100000, max_nodes = 15)
+function k2_algorithm(k2_ordering::Vector{Int}, vars, D, iterations = 100000, max_nodes = 15)
     n = length(vars)
-    # G = rand_graph_neighbor(SimpleDiGraph(n), max_nodes)
+
+    # Empty graph, to add nodes to
     G = SimpleDiGraph(n)
-    for (k,i) in enumerate(method.ordering[2:end])
+    for (k,i) in enumerate(k2_ordering[2:end])
         y = bayesian_score(vars, G, D)
         # for iter in 1:iterations
         iter = 0
         while true
             y_best, j_best = -Inf, 0
-            for j in method.ordering[1:k]
+            for j in k2_ordering[1:k]
             # for x in 1:iterations
                 # print("node $x")
                 # j = mod1(i + rand(2:n)-1, n)
@@ -264,15 +256,20 @@ function fit(method::K2_Ordering, vars, D, iterations = 100000, max_nodes = 15)
                     rem_edge!(G, j, i)
                 end
             end
-            # println("Iteration $iter on node $i: $y_best")
-            iter += 1
+            
             if y_best > y
                 y = y_best
                 add_edge!(G, j_best, i)
             else
                 break
             end
+
+            iter += 1
+            if iter == iterations
+                break
+            end
         end
+        println("Stopped after $iter iterations on node $i: $y")
     end
     return G
 end

@@ -52,17 +52,11 @@ end
         3 3 1 2 1 3 3 3 1 3 3 3 3 3 2 3 3 2 3 1
     ])
 
-    # Graph in original order of nodes
+    # Graph in old order of nodes
     graph = SimpleDiGraph(length(nodes))
     add_edge!(graph, 1, 2); add_edge!(graph, 1, 4); add_edge!(graph, 3, 4)
     add_edge!(graph, 5, 4); add_edge!(graph, 5, 6)
     
-    
-    # Changes up the nodes and ordered samples to be in topological order
-    order = [1 3 5 2 4 6] # Maps original rows to their topological orderings
-    ordered_samples = samples[order[:], :] 
-    ordered_nodes = nodes[order[:]]
-
     score = bayesian_score(nodes, graph, samples)
 
     # https://github.com/sisl/AA228-CS238-Student/blob/main/project1/example/example.score
