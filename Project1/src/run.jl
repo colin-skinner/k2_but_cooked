@@ -49,7 +49,7 @@ if isfile(cache_name)
     else
         old_graph = imported_graphs["graph"]
         old_score = bayesian_score(nodes, old_graph, samples)
-
+        graph = old_graph
         
         println("Imported graph with $(nv(old_graph)) nodes")
         println("with score of $(bayesian_score(nodes, old_graph, samples))")
@@ -61,26 +61,26 @@ end
 #   Importing 
 #######################################################
 
-graph = old_graph
 # Computes new graph with score and order
-# graph, score, order = compute(nodes, samples, graph, retries, local_iterations)
-# println("Calculated score of $score")
+
+graph, score, order = compute(nodes, samples, graph, retries, local_iterations)
+println("Calculated score of $score")
 
 # #######################################################
 # #   Saving Cache
 # #######################################################
 
-# # Save if new score is better
+# Save if new score is better
 
-# if score > old_score
-#     println("New graph score of ($score) is better than old score ($old_score). Saving...")
-#     open(cache_name, "w") do io
-#         println(io, order)
-#         savegraph(io, graph, "graph", LGFormat())
-#     end
-# else
-#     println("New graph score of ($score) was not better than old score ($old_score)")
-# end
+if score > old_score
+    println("New graph score of ($score) is better than old score ($old_score). Saving...")
+    open(cache_name, "w") do io
+        println(io, order)
+        savegraph(io, graph, "graph", LGFormat())
+    end
+else
+    println("New graph score of ($score) was not better than old score ($old_score)")
+end
 
 #######################################################
 #   Saving Graph 
