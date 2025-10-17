@@ -136,24 +136,24 @@ end
 #   Bayesian Score
 #######################################################
 
-function summation_of_parent_edges_q_i(M, α)
+function summation_of_parent_edges_q_i(M, alpha)
 
     # First summation with the ij0 terms (sum of all ijk)
-    result = sum(loggamma.(sum(α,dims=2)))
-    result -= sum(loggamma.(sum(α,dims=2) + sum(M,dims=2)))
+    result = sum(loggamma.(sum(alpha,dims=2)))
+    result -= sum(loggamma.(sum(alpha,dims=2) + sum(M,dims=2)))
 
     # Second summation through each sample (ijk)
-    result += sum(loggamma.(α + M))
-    result -= sum(loggamma.(α))
+    result += sum(loggamma.(alpha + M))
+    result -= sum(loggamma.(alpha))
 
     return result
 end
 function bayesian_score(nodes::Vector{Variable}, graph::DiGraph, samples::Matrix{Int})
     n = length(nodes)
     M = statistics(nodes, graph, samples) # Obtain count matrices
-    α = prior(nodes, graph) # Obtain pseudocount matrices (our prior dictates all elements should be 1)
+    alpha = prior(nodes, graph) # Obtain pseudocount matrices (our prior dictates all elements should be 1)
     return sum(
-        summation_of_parent_edges_q_i(M[node_i], α[node_i]) # Function sums the counts from parent edges (q_i)
+        summation_of_parent_edges_q_i(M[node_i], alpha[node_i]) # Function sums the counts from parent edges (q_i)
         for node_i in 1:n # For each node i
     )
 end
