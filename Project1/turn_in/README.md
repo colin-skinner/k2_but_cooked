@@ -5,6 +5,9 @@ Running time for each problem – 10%
 Visualization of each graph – 10%
 Code (included in PDF) – 10% -->
 
+# Project 1 - Colin Skinner - colin13@stanford.edu
+
+
 # Script Flow
 1. Checks cache folder for the current optimal graph, and imports
 2. Runs algorithm to get a new graph
