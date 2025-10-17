@@ -237,7 +237,7 @@ function k2_algorithm(k2_ordering::Vector{Int}, nodes::Vector{Variable}, samples
     for (curr_node_index,node_i) in enumerate(k2_ordering[2:end])
         best_score = bayesian_score(nodes, graph, samples::Matrix{Int}) # Baseline score
 
-        # Find 
+        # Find parent edges that add to the score
         iter = 0
         while true
             current_score, best_parent_j = -Inf, 0
