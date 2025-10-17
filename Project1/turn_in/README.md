@@ -1,3 +1,75 @@
+<!-- 
+
+Description of algorithm – 10%
+Running time for each problem – 10%
+Visualization of each graph – 10%
+Code (included in PDF) – 10% -->
+
+# Script Flow
+1. Checks cache folder for the current optimal graph, and imports
+2. Runs algorithm to get a new graph
+3. If Bayesian score of new graph is better, save it as the new optimal graph
+4. Save and plot new graph
+
+# Algorithm Description
+- Run K2 with a certain amount of "restarts", selecting the best one
+- Run local search optimization on the resulting graph for a certain number of iterations
+
+I chose to run both algorithms in order to achieve randomness of restarting the node ordering. However, to save time on larger graphs, and to optimize around the "best" current graph, I added local search optimization to optimize around this ordering. 
+
+# Running time
+The following running times were acheived:
+
+### small.csv
+Running with 100 restarts and 1000 local searches:
+```
+real	0m19.524s
+user	0m19.207s
+sys	0m0.643s
+```
+
+### medium.csv
+Running with 10 restarts and 1000 local searches:
+```
+real	0m37.706s
+user	0m37.270s
+sys	0m0.751s
+```
+
+### large.csv
+Running with 1 restart and 300 local searches:
+```
+real	3m8.609s
+user	3m4.921s
+sys	0m1.961s
+```
+
+# Plots 
+
+### small.csv
+![Model](../plots/small_final.png)
+### medium.csv
+![Model](../plots/medium_final.png)
+### large.csv
+![Model](../plots/large_final.png)
+
+
+## Potential improvements
+Although I did not have the time to implement it, an idea that I had for another algorithm is as follows:
+1. Pick random ordering of nodes and run K2
+   - Repeat steps X amount of times, and take top 10%
+2. Run local search on those until the the score does not improve in Y iterations
+3. For optimized results, remove half of the edges, and repeat step 2 (Z amount of times so that the edge removals are random)
+   1. Repeat step 3, but each subsequent time, half the amount of edges removed
+   2. When one graph remains, it is the winner
+
+
+
+# Code
+
+## Project1.jl
+This is the module with all of the functions
+```
 module Project1
 
 using Graphs
@@ -15,6 +87,11 @@ mutable struct Variable
     r::Int # number of possible values
 end
 
+# TODO: decide if using
+struct K2_Ordering
+    ordering::Vector{Int} # variable ordering
+end
+
 struct LocalDirectedGraphSearch
     G::SimpleDiGraph # initial graph
     k_max::Int # number of iterations
@@ -24,7 +101,7 @@ end
 #   Importing and Exporting
 #######################################################
 
-function import_data(filename::String)::Tuple{Vector{Variable}, Matrix{Int}}
+function import_data(filename::String, debug::Bool = false)::Tuple{Vector{Variable}, Matrix{Int}}
 
     nodes = Vector{Variable}()
     samples = Vector{Vector{Int}}()
@@ -46,6 +123,10 @@ function import_data(filename::String)::Tuple{Vector{Variable}, Matrix{Int}}
         for line in eachline(io)
             single_sample = parse.(Int, split(line, ','))
             push!(samples, single_sample)
+            
+            # if debug
+            #     @printf("%s\n", single_sample)
+            # end
         end
     end
 
@@ -267,3 +348,105 @@ end
 
 
 end # module Project1
+```
+
+## run.jl
+This script calls the Julia module Project1.jl
+
+```
+using Project1: import_data, compute, write_gph, bayesian_score
+using Graphs, GraphRecipes, Plots
+
+
+#######################################################
+#   Args
+#######################################################
+
+if length(ARGS) != 3
+    error("usage: julia src/run.jl data/<infile>.csv [k2 retries] [local optimization runs]")
+end
+
+inputfilename = ARGS[1]
+retries = parse(Int,ARGS[2])
+local_iterations = parse(Int, ARGS[3])
+
+cache_name = split(inputfilename, "/")[end]
+cache_name = "cache/" * split(cache_name, ".")[1] * ".gph"
+
+plot_filename = split(inputfilename, "/")[end]
+plot_filename = "plots/" * split(plot_filename, ".")[1] # plot automatically adds png
+
+outputfilename = split(inputfilename, "/")[end]
+outputfilename = "graphs/" * split(outputfilename, ".")[1] * ".gph"
+
+#######################################################
+#   Importing 
+#######################################################
+
+nodes, samples = import_data(inputfilename, false)
+
+old_graph = DiGraph() # default graph
+order = Vector(range(1,length(nodes)))
+old_score = -Inf
+
+# Imports graph from cache if it exists
+if isfile(cache_name)
+
+    # Grab file and import header and data
+    imported_graphs, order = open(cache_name, "r") do io
+        order = eval(Meta.parse(readline(io)))
+        graph = loadgraphs(io, LGFormat())
+        return graph, order
+    end
+
+    if length(imported_graphs) == 0
+        println("Imported file has no graphs. Defaulting to empty.")
+
+    else
+        graph = imported_graphs["graph"]
+        old_score = bayesian_score(nodes, old_graph, samples)
+
+        
+        println("Imported graph with $(nv(old_graph)) nodes")
+        println("with score of $(bayesian_score(nodes, graph, samples))")
+        println("and node order of $order")
+    end
+end
+
+#######################################################
+#   Importing 
+#######################################################
+
+# Computes new graph with score and order
+graph, score, order = compute(nodes, samples, graph, retries, local_iterations)
+println("Calculated score of $score")
+
+#######################################################
+#   Saving Cache
+#######################################################
+
+# Save if new score is better
+
+if score > old_score
+    println("New graph score of ($score) is better than old score ($old_score). Saving...")
+    open(cache_name, "w") do io
+        println(io, order)
+        savegraph(io, graph, "graph", LGFormat())
+    end
+else
+    println("New graph score of ($score) was not better than old score ($old_score)")
+end
+
+#######################################################
+#   Saving Graph 
+#######################################################
+
+node_names = [string(n.name) for n in nodes]
+
+write_gph(graph, node_names, outputfilename)
+
+graphplot(graph, names=node_names,size=(2000, 2000), dpi=300,
+          nodesize=0.2,
+          fontsize=12)
+png(plot_filename)
+```

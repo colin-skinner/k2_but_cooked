@@ -1,6 +1,13 @@
 Useful commands
 
 ```
+  julia --project=. src/run.jl data/small.csv 100 1000
+  julia --project=. src/run.jl data/medium.csv 10 1000
+  julia --project=. src/run.jl data/large.csv 1 300
+```
+
+
+```
 julia --project=. src/run.jl data/..
 ```
 

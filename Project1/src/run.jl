@@ -1,19 +1,24 @@
 using Project1: import_data, compute, write_gph, bayesian_score
-using Graphs
+using Graphs, GraphRecipes, Plots
 
 
 #######################################################
 #   Args
 #######################################################
 
-if length(ARGS) != 1
-    error("usage: julia src/run.jl data/<infile>.csv")
+if length(ARGS) != 3
+    error("usage: julia src/run.jl data/<infile>.csv [k2 retries] [local optimization runs]")
 end
 
 inputfilename = ARGS[1]
-# outputfilename = ARGS[2]
+retries = parse(Int,ARGS[2])
+local_iterations = parse(Int, ARGS[3])
+
 cache_name = split(inputfilename, "/")[end]
 cache_name = "cache/" * split(cache_name, ".")[1] * ".gph"
+
+plot_filename = split(inputfilename, "/")[end]
+plot_filename = "plots/" * split(plot_filename, ".")[1] # plot automatically adds png
 
 outputfilename = split(inputfilename, "/")[end]
 outputfilename = "graphs/" * split(outputfilename, ".")[1] * ".gph"
@@ -22,7 +27,7 @@ outputfilename = "graphs/" * split(outputfilename, ".")[1] * ".gph"
 #   Importing 
 #######################################################
 
-nodes, samples = import_data(inputfilename, false)
+nodes, samples = import_data(inputfilename)
 
 old_graph = DiGraph() # default graph
 order = Vector(range(1,length(nodes)))
@@ -52,38 +57,22 @@ if isfile(cache_name)
     end
 end
 
-# #######################################################
-# #   Importing 
-# #######################################################
+#######################################################
+#   Importing 
+#######################################################
 
+graph = old_graph
 # Computes new graph with score and order
-graph, score, order = compute(nodes, samples, old_graph)
-println("Calculated score of $score")
+# graph, score, order = compute(nodes, samples, graph, retries, local_iterations)
+# println("Calculated score of $score")
 
 # #######################################################
 # #   Saving Cache
 # #######################################################
 
-# New score is better
+# # Save if new score is better
 
-if score > old_score
-    println("New graph score of ($score) is better than old score ($old_score). Saving...")
-    open(cache_name, "w") do io
-        println(io, order)
-        savegraph(io, graph, "graph", LGFormat())
-    end
-else
-    println("New graph score of ($score) was not better than old score ($old_score)")
-end
-
-# Saves graph
-# if nv(old_graph) == 0
-#     println("Saving graph with score of $score")
-#     open(cache_name, "w") do io
-#         println(io, order)
-#         savegraph(io, graph, "graph", LGFormat())
-#     end
-# elseif score > old_score
+# if score > old_score
 #     println("New graph score of ($score) is better than old score ($old_score). Saving...")
 #     open(cache_name, "w") do io
 #         println(io, order)
@@ -91,19 +80,17 @@ end
 #     end
 # else
 #     println("New graph score of ($score) was not better than old score ($old_score)")
-
 # end
 
-# #######################################################
-# #   Saving Graph 
-# #######################################################
+#######################################################
+#   Saving Graph 
+#######################################################
 
-# # New order of names
-# idx2names = Matrix{Symbol}(undef, 1, length(nodes))
-# for (node, new_idx) in zip(nodes, sorted_nodes.ordering)
-#     idx2names[new_idx] = node.name
-# end
+node_names = [string(n.name) for n in nodes]
 
-# write_gph(new_graph, idx2names, outputfilename)
+write_gph(graph, node_names, outputfilename)
 
-
+graphplot(graph, names=node_names,size=(2000, 2000), dpi=300,
+          nodesize=0.2,
+          fontsize=12)
+png(plot_filename)
